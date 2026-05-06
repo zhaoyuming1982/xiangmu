@@ -27,3 +27,6 @@ Thumbs.db
 download_progress.log
 stock_task.csv
 
+# Local business data files
+stock_industry.csv
+Table_7656.xlsx
