@@ -406,9 +406,15 @@ def init_task_csv():
         df_stock["code"].str.startswith(("sz.00",  "sz.30"))
     ].copy()
     df_plate["code_num"] = df_plate["code"].map(normalize_code_num)
-    force_mask = df_plate["code_num"].isin(force_include_code_nums())
-    df_no_st = df_plate[(~df_plate["code_name"].str.contains("ST", na=False)) | force_mask]
-    df_final = df_no_st[(~df_no_st["code_name"].str.contains("退", na=False)) | force_mask].copy()
+    force_codes = force_include_code_nums()
+    df_no_st = df_plate[
+        (~df_plate["code_name"].str.contains("ST", na=False)) |
+        df_plate["code_num"].isin(force_codes)
+    ].copy()
+    df_final = df_no_st[
+        (~df_no_st["code_name"].str.contains("退", na=False)) |
+        df_no_st["code_num"].isin(force_codes)
+    ].copy()
     
     # 3. 提取纯数字代码
     df_final["code_num"] = df_final["code"].map(normalize_code_num)
@@ -770,11 +776,11 @@ def calculate_all_stock_fields():
         SET
             intra_pct     = CASE WHEN open > 0 THEN ROUND((close - open) / open * 100, 2) ELSE NULL END,
             amplitude     = CASE WHEN preclose > 0 THEN ROUND((high - low) / preclose * 100, 2) ELSE NULL END,
-            up_limit      = ROUND(preclose * CASE WHEN code_name LIKE '%ST%' THEN 1.05 WHEN code RLIKE '^(sz\\.30|sh\\.68)' THEN 1.2 ELSE 1.1 END, 2),
-            down_limit    = ROUND(preclose * CASE WHEN code_name LIKE '%ST%' THEN 0.95 WHEN code RLIKE '^(sz\\.30|sh\\.68)' THEN 0.8 ELSE 0.9 END, 2),
+            up_limit      = ROUND(preclose * CASE WHEN code_name LIKE '%%ST%%' THEN 1.05 WHEN code RLIKE '^(sz\\.30|sh\\.68)' THEN 1.2 ELSE 1.1 END, 2),
+            down_limit    = ROUND(preclose * CASE WHEN code_name LIKE '%%ST%%' THEN 0.95 WHEN code RLIKE '^(sz\\.30|sh\\.68)' THEN 0.8 ELSE 0.9 END, 2),
             limit_status  = CASE
-                WHEN close = ROUND(preclose * CASE WHEN code_name LIKE '%ST%' THEN 1.05 WHEN code RLIKE '^(sz\\.30|sh\\.68)' THEN 1.2 ELSE 1.1 END, 2) THEN 1
-                WHEN close = ROUND(preclose * CASE WHEN code_name LIKE '%ST%' THEN 0.95 WHEN code RLIKE '^(sz\\.30|sh\\.68)' THEN 0.8 ELSE 0.9 END, 2) THEN 2
+                WHEN close = ROUND(preclose * CASE WHEN code_name LIKE '%%ST%%' THEN 1.05 WHEN code RLIKE '^(sz\\.30|sh\\.68)' THEN 1.2 ELSE 1.1 END, 2) THEN 1
+                WHEN close = ROUND(preclose * CASE WHEN code_name LIKE '%%ST%%' THEN 0.95 WHEN code RLIKE '^(sz\\.30|sh\\.68)' THEN 0.8 ELSE 0.9 END, 2) THEN 2
                 ELSE 0
             END,
             circ_market   = CASE WHEN turn > 0 THEN ROUND(volume / turn * close * 100, 2) ELSE 0 END
@@ -1341,9 +1347,6 @@ if __name__ == "__main__":
 
     # ========== 自动计算填充7个字段 ==========
     calculate_all_stock_fields()
-
-    # ========== 根据 stock_task.csv 修正未知行业 ==========
-    refresh_stock_daily_industry_from_task_csv()
 
     # ====================== 往涨跌停表stock_limit里写数据 ======================
 
