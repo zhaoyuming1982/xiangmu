@@ -24,9 +24,12 @@ Thumbs.db
 .DS_Store
 
 # Project runtime outputs
+*.log
 download_progress.log
 stock_task.csv
+industry.txt
 
 # Local business data files
 stock_industry.csv
 Table_7656.xlsx
+新建文本文档.txt
